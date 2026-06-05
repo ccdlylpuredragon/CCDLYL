@@ -1,149 +1,44 @@
-"""Order service module with duplicated patterns."""
+"""Order service module — refactored to use shared utilities."""
 
-import json
-import logging
-import time
+from utils.file_io import read_json, write_json
+from utils.http import get, post
+from utils.logging import get_logger
+from utils.validation import FieldValidator
 
-import requests
+logger = get_logger("order_service")
 
-
-def setup_logging():
-    logger = logging.getLogger("order_service")
-    logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    handler.setFormatter(formatter)
-    if not logger.handlers:
-        logger.addHandler(handler)
-    return logger
-
-
-logger = setup_logging()
+BASE_URL = "https://api.example.com/orders"
 
 
 def fetch_order(order_id):
-    """Fetch an order from the API with retry logic."""
-    url = f"https://api.example.com/orders/{order_id}"
-    max_retries = 3
-    retry_delay = 1
-
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.warning(
-                f"Attempt {attempt + 1}/{max_retries} failed for {url}: {e}"
-            )
-            if attempt < max_retries - 1:
-                time.sleep(retry_delay * (2 ** attempt))
-            else:
-                logger.error(f"All {max_retries} attempts failed for {url}")
-                raise
+    """Fetch an order from the API."""
+    return get(f"{BASE_URL}/{order_id}")
 
 
 def create_order(data):
-    """Create an order via the API with retry logic."""
-    url = "https://api.example.com/orders"
-    max_retries = 3
-    retry_delay = 1
-
-    for attempt in range(max_retries):
-        try:
-            response = requests.post(url, json=data, timeout=10)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.warning(
-                f"Attempt {attempt + 1}/{max_retries} failed for {url}: {e}"
-            )
-            if attempt < max_retries - 1:
-                time.sleep(retry_delay * (2 ** attempt))
-            else:
-                logger.error(f"All {max_retries} attempts failed for {url}")
-                raise
+    """Create an order via the API."""
+    return post(BASE_URL, json=data)
 
 
 def cancel_order(order_id):
-    """Cancel an order via the API with retry logic."""
-    url = f"https://api.example.com/orders/{order_id}/cancel"
-    max_retries = 3
-    retry_delay = 1
-
-    for attempt in range(max_retries):
-        try:
-            response = requests.post(url, timeout=10)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.warning(
-                f"Attempt {attempt + 1}/{max_retries} failed for {url}: {e}"
-            )
-            if attempt < max_retries - 1:
-                time.sleep(retry_delay * (2 ** attempt))
-            else:
-                logger.error(f"All {max_retries} attempts failed for {url}")
-                raise
+    """Cancel an order via the API."""
+    return post(f"{BASE_URL}/{order_id}/cancel")
 
 
 def validate_order_data(data):
     """Validate order data before creating an order."""
-    errors = []
-
-    if not data.get("product_id"):
-        errors.append("product_id is required")
-    elif not isinstance(data["product_id"], str):
-        errors.append("product_id must be a string")
-    elif len(data["product_id"]) > 100:
-        errors.append("product_id must be at most 100 characters")
-
-    if not data.get("quantity"):
-        errors.append("quantity is required")
-    elif not isinstance(data["quantity"], int):
-        errors.append("quantity must be an integer")
-    elif data["quantity"] < 1 or data["quantity"] > 1000:
-        errors.append("quantity must be between 1 and 1000")
-
-    if data.get("notes") is not None:
-        if not isinstance(data["notes"], str):
-            errors.append("notes must be a string")
-        elif len(data["notes"]) > 500:
-            errors.append("notes must be at most 500 characters")
-
-    return errors
+    v = FieldValidator(data)
+    v.require("product_id", type_=str, max_length=100)
+    v.require("quantity", type_=int, min_val=1, max_val=1000)
+    v.optional("notes", type_=str, max_length=500)
+    return v.errors
 
 
 def read_order_config(filepath):
     """Read order configuration from a JSON file."""
-    try:
-        with open(filepath, "r") as f:
-            config = json.load(f)
-        logger.info(f"Successfully loaded config from {filepath}")
-        return config
-    except FileNotFoundError:
-        logger.error(f"Config file not found: {filepath}")
-        return {}
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in config file {filepath}: {e}")
-        return {}
-    except PermissionError:
-        logger.error(f"Permission denied reading config file: {filepath}")
-        return {}
+    return read_json(filepath)
 
 
 def write_order_config(filepath, data):
     """Write order configuration to a JSON file."""
-    try:
-        with open(filepath, "w") as f:
-            json.dump(data, f, indent=2)
-        logger.info(f"Successfully wrote config to {filepath}")
-        return True
-    except PermissionError:
-        logger.error(f"Permission denied writing config file: {filepath}")
-        return False
-    except OSError as e:
-        logger.error(f"OS error writing config file {filepath}: {e}")
-        return False
+    return write_json(filepath, data)
