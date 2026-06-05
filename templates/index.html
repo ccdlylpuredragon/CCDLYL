@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}首页{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-4 mb-3">CCDLYL 用户管理系统</h1>
+    <p class="lead text-muted mb-5">用户注册 / 文件上传 / 数据库管理</p>
+
+    <div class="row justify-content-center g-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-people-fill display-3 text-primary mb-3"></i>
+                    <h5 class="card-title">注册用户数</h5>
+                    <p class="display-6 fw-bold">{{ user_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-file-earmark-fill display-3 text-success mb-3"></i>
+                    <h5 class="card-title">上传文件数</h5>
+                    <p class="display-6 fw-bold">{{ file_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center g-3 mt-4">
+        <div class="col-auto">
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-person-plus"></i> 注册新用户
+            </a>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('upload') }}" class="btn btn-success btn-lg">
+                <i class="bi bi-cloud-upload"></i> 上传文件
+            </a>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('admin') }}" class="btn btn-secondary btn-lg">
+                <i class="bi bi-gear"></i> 管理数据
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
